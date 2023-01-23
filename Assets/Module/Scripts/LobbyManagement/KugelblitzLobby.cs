@@ -1,5 +1,4 @@
-﻿using Assets.Module.Scripts;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -100,7 +99,7 @@ public class KugelblitzLobby
 
         _isOpen = false;
 
-        _quirks = new LobbyContent(_members.Count).Content;
+        _quirks = _content.Build(_members.Count).Content;
 
         _quirks.Shuffle();
 
@@ -212,15 +211,20 @@ public class KugelblitzLobby
         if (_isOpen)
         {
             Freeze();
-            _quirks = _quirks.Shuffle();
             for (int i = 0; i < _members.Count; i++)
             {
                 _quirks[i].Return();
                 _members[i].AssignStage((IKugelblitzStageViewer)_quirks[i]);
-                Debug.Log("Assigned " + _members[i] + " to " + (i + 1));
+                Debug.Log("Assigned " + _quirks[i] + " to " + _members[i]);
             }
+            Debug.Log(_members.Join(","));
+            Debug.Log(_quirks.Join(","));
             return;
         }
+
+        Debug.Log("Starting with");
+        Debug.Log(_members.Join(","));
+        Debug.Log(_quirks.Join(","));
 
         IEnumerable<int> unsolvedCounts = stageShiftingMods.Select(x => x.RemainingSolves()).Distinct();
 
@@ -232,6 +236,7 @@ public class KugelblitzLobby
             {
                 reorderedMembers.Add(_members[i]);
                 reorderedQuirks.Add(_quirks[i]);
+                Debug.Log("Added " + _quirks[i] + " as unchanged");
             }
 
         Debug.Log(stageShiftingMods.Count());
@@ -248,7 +253,9 @@ public class KugelblitzLobby
                     quirksToShuffle.Add(_quirks[i]);
                 }
 
+            Debug.Log("Shuffled " + quirksToShuffle.Join(", "));
             quirksToShuffle = quirksToShuffle.Shuffle();
+            Debug.Log("is now " + quirksToShuffle.Join(", "));
 
 
             if (count == 0)
@@ -258,14 +265,15 @@ public class KugelblitzLobby
                     for (int i = 0; i < membersToProgress.Count; i++)
                     {
                         membersToProgress[i].AssignStage(new EmptyStage(_color));
-                        Debug.Log("Assigned " + quirksToShuffle[i] + " to " + (i + 1));
+                        reorderedMembers.Add(membersToProgress[i]);
+                        reorderedQuirks.Add(quirksToShuffle[i]);
                     }
                     continue;
                 }
 
                 EnterSolvableState(1.5f);
 
-                continue;
+                return;
             }
 
 
@@ -275,10 +283,16 @@ public class KugelblitzLobby
                 reorderedQuirks.Add(quirksToShuffle[i]);
 
                 quirksToShuffle[i].Advance();
-                membersToProgress[i].AssignStage((IKugelblitzStageViewer)reorderedQuirks[i]);
-                Debug.Log("Assigned " + quirksToShuffle[i] + " to " + (i + 1));
+                membersToProgress[i].AssignStage((IKugelblitzStageViewer)quirksToShuffle[i]);
+                Debug.Log("Assigned " + quirksToShuffle[i] + " to " + membersToProgress[i]);
             }
         }
+
+        _members = reorderedMembers;
+        _quirks = reorderedQuirks;
+
+        Debug.Log(_members.Join(","));
+        Debug.Log(_quirks.Join(","));
     }
 
     public void EnterSolvableState(float pacing)

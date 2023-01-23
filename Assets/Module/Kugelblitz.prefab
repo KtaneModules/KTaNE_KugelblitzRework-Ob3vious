@@ -92,7 +92,7 @@ GameObject:
   - component: {fileID: 4388557555075124}
   - component: {fileID: 114808829736998066}
   m_Layer: 0
-  m_Name: Connector
+  m_Name: Linkage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -110,7 +110,7 @@ GameObject:
   - component: {fileID: 23564292922484186}
   - component: {fileID: 114849364113809974}
   m_Layer: 0
-  m_Name: Cylinder
+  m_Name: LinkageCylinder
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

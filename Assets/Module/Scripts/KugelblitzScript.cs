@@ -1,5 +1,4 @@
-﻿using Assets.Module.Scripts;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,9 +35,15 @@ public class KugelblitzScript : MonoBehaviour
 
     public Material[] SolveMats;
 
+
+    private static int _moduleIdCounter = 1;
+    private int _moduleId;
+
+
     void Awake()
     {
         LastInstance = this;
+        _moduleId = _moduleIdCounter++;
     }
 
     void Start()
@@ -52,23 +57,21 @@ public class KugelblitzScript : MonoBehaviour
 
         Highlight.enabled = false;
         Debug.Log(Linkage);
-        Linkage = GetComponentInChildren<VoidLinkage>();
-        Debug.Log(Linkage);
+        //Linkage = GetComponentInChildren<VoidLinkage>();
+        //Debug.Log(Linkage);
         Linkage.GetComponentInChildren<MeshRenderer>().enabled = false;
 
         AssignStage(new EmptyStage(KugelblitzColor.None));
 
-        Module.OnActivate = () =>
-        {
-            _lobby = LobbyManager.GetRandomLobby();
-            _lobby.Subscribe(this);
-            _colorblind = Colorblind.ColorblindModeActive;
-            UpdateColorblind();
-        };
+        _lobby = LobbyManager.GetRandomLobby();
+        _lobby.Subscribe(this);
+        _colorblind = Colorblind.ColorblindModeActive;
+        UpdateColorblind();
     }
 
     public void AssignStage(IKugelblitzStageViewer viewer)
     {
+        Debug.Log("Assigned " + viewer + " to " + this);
         viewer.UpdateParticles(_particles.ToArray());
         Void.SetColor(viewer.GetBaseColor());
     }
@@ -369,4 +372,9 @@ public class KugelblitzScript : MonoBehaviour
         }
     }
 
+
+    public override string ToString()
+    {
+        return "[Kugelblitz #" + _moduleId + "]";
+    }
 }
