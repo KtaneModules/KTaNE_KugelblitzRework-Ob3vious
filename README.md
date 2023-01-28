@@ -26,8 +26,8 @@ Quirks are in ROYGBIV order.
 - Two digits in front means the bounds for the group size are the two digits given as lower and upper bound respectively.
 
 ### Example
-`[Kugelblitz]:4.2;4---+??+,28???----,1-------,2.501;???????` will generate the following, given the right number of Kugelblitz modules being present:
+`[Kugelblitz]:4.2;4---+??+,28???----,1-------,2;???????` will generate the following, given the right number of Kugelblitz modules being present:
 - A group of 4 Kugelblitz modules with a green quirk, a violet quirk and either the blue or the indigo quirk. This group pulses every 4.2 seconds during submission.
 - A group of anywhere between 2 and 4 Kugelblitz modules, with choice between the red, orange and yellow quirks. This group pulses with whatever pacing is set by the player in modsettings. Note that it is not a group of up to 8 modules, because the set itself indicates that only 3 different quirks are allowed at most.
 - A group of exactly one module, meaning no quirks. This group also uses the pacing set in modsettings.
-- A group with complete freedom of quirk selection. During submission phase, the group will pulse every 2.501 seconds.
+- A group with complete freedom of quirk selection. During submission phase, the group will pulse every 2 seconds.
