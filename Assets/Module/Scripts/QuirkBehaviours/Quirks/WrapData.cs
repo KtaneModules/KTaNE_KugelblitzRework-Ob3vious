@@ -33,6 +33,11 @@ public class WrapStageManager : KugelblitzStageManager<KugelblitzWrapData>
             Current().GetFromIndex(index) ? KugelblitzColor.GetColorFromIndex(index) : KugelblitzColor.None, 
             ParticleMovement.FromChase(_pattern, _indices[index] / 12f));
     }
+
+    protected override string StageType()
+    {
+        return "Violet quirk";
+    }
 }
 
 public class KugelblitzWrapData : KugelblitzData<KugelblitzWrapData>

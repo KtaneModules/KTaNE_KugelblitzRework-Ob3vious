@@ -22,6 +22,11 @@ public class OffsetStageManager : KugelblitzStageManager<KugelblitzOffsetData>
             Current().GetFromIndex(index) != 0 ? KugelblitzColor.GetColorFromIndex(index) : KugelblitzColor.None,
             ParticleMovement.FromOrthogonal(Current().GetFromIndex(index) - 1));
     }
+
+    protected override string StageType()
+    {
+        return "Red quirk";
+    }
 }
 
 public class KugelblitzOffsetData : KugelblitzData<KugelblitzOffsetData>

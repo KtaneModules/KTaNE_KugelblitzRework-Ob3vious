@@ -9,9 +9,9 @@ public class KugelblitzCalculation
     public static string Calculate(KugelblitzLobby kugelblitzes)
     {
         KugelblitzBaseData baseData = kugelblitzes.GetQuirk<BaseStageManager>().GetFinalData();
-        byte initialDirection = 0;
+        byte initialDirection = kugelblitzes.GetInitialDirection();
 
-        Debug.Log(baseData);
+        kugelblitzes.GetLogger().WriteFormat("Final values: {0}, with initial direction of {1}.", baseData, initialDirection);
 
         byte[] offsets = new byte[7]; //red
         bool[] inverts = new bool[7]; //orange
@@ -27,65 +27,65 @@ public class KugelblitzCalculation
             KugelblitzOffsetData offsetData = kugelblitzes.GetQuirk<OffsetStageManager>().GetFinalData();
             offsets = Enumerable.Range(0, 7).Select(x => (byte)((offsetData.GetFromIndex(x) + 6) % 7 + 1)).ToArray();
 
-            Debug.Log(offsetData);
+            kugelblitzes.GetLogger().WriteFormat("Final values for the red quirk: {0}.", offsetData);
         }
-        catch (Exception) { Debug.Log("No red"); }
+        catch { }
 
         try
         {
             KugelblitzInvertData invertData = kugelblitzes.GetQuirk<InvertStageManager>().GetFinalData();
             inverts = Enumerable.Range(0, 7).Select(x => invertData.GetFromIndex(x)).ToArray();
 
-            Debug.Log(invertData);
+            kugelblitzes.GetLogger().WriteFormat("Final values for the orange quirk: {0}.", invertData);
         }
-        catch (Exception) { Debug.Log("No orange"); }
+        catch { }
 
         try
         {
             KugelblitzInsertData insertData = kugelblitzes.GetQuirk<InsertStageManager>().GetFinalData();
             inserts = Enumerable.Range(0, 7).Select(x => insertData.GetFromIndex(x)).ToArray();
 
-            Debug.Log(insertData);
+            kugelblitzes.GetLogger().WriteFormat("Final values for the yellow quirk: {0}.", insertData);
         }
-        catch (Exception) { Debug.Log("No yellow"); }
+        catch { }
 
         try
         {
             KugelblitzLengthData lengthData = kugelblitzes.GetQuirk<LengthStageManager>().GetFinalData();
             lengths = Enumerable.Range(0, 7).Select(x => (byte)((lengthData.GetFromIndex(x) + 6) % 7 + 1)).ToArray();
 
-            Debug.Log(lengthData);
+            kugelblitzes.GetLogger().WriteFormat("Final values for the green quirk: {0}.", lengthData);
         }
-        catch (Exception) { Debug.Log("No green"); }
+        catch { }
 
         try
         {
             KugelblitzTurnData turnData = kugelblitzes.GetQuirk<TurnStageManager>().GetFinalData();
             turns = Enumerable.Range(0, 6).Select(x => (byte)((turnData.GetFromIndex(x) + 2) % 3 + 1)).ToArray();
 
-            Debug.Log(turnData);
+            kugelblitzes.GetLogger().WriteFormat("Final values for the blue quirk: {0}.", turnData);
         }
-        catch (Exception) { Debug.Log("No blue"); }
+        catch { }
 
         try
         {
             KugelblitzFlipData flipData = kugelblitzes.GetQuirk<FlipStageManager>().GetFinalData();
             flips = Enumerable.Range(0, 6).Select(x => flipData.GetFromIndex(x)).ToArray();
 
-            Debug.Log(flipData);
+            kugelblitzes.GetLogger().WriteFormat("Final values for the indigo quirk: {0}.", flipData);
         }
-        catch (Exception) { Debug.Log("No indigo"); }
+        catch { }
 
         try
         {
             KugelblitzWrapData wrapData = kugelblitzes.GetQuirk<WrapStageManager>().GetFinalData();
             grid = new KugelblitzGrid(wrapData.GetHWrap(), wrapData.GetVWrap());
 
-            Debug.Log(wrapData);
+            kugelblitzes.GetLogger().WriteFormat("Final values for the violet quirk: {0}.", wrapData);
         }
-        catch (Exception) { Debug.Log("No violet"); }
+        catch { }
 
-        
+
 
 
 
@@ -98,12 +98,15 @@ public class KugelblitzCalculation
 
         for (int i = 0; i < values.Length; i++)
         {
+            List<string> positions = new List<string>();
             for (int j = 0; j < lengths[i]; j++)
             {
                 values[i] += pivot.Read();
-                Debug.Log(pivot.Read() + ";" + pivot);
+                positions.Add(pivot.Coordinate());
                 pivot.Step();
             }
+
+            kugelblitzes.GetLogger().WriteFormat("Read from the following coordinates in order: {0}.", positions.Join(", "));
 
             if (i == values.Length - 1)
                 break;
@@ -122,9 +125,11 @@ public class KugelblitzCalculation
 
         string input = ValueReader.BitsToInput(binary);
 
-        Debug.Log(values.Join(""));
+        kugelblitzes.GetLogger().WriteFormat("Resulting digits after potential modifications are {0}.", values.Join(""));
 
-        Debug.Log(binary);
+        kugelblitzes.GetLogger().WriteFormat("Resulting binary after potential modifications are {0}.", binary);
+
+        kugelblitzes.GetLogger().WriteFormat("Expecting a final input of {0}.", input);
 
         return input;
     }
@@ -202,6 +207,21 @@ public class KugelblitzCalculation
             }
             return _grid[y, x];
         }
+
+        public string TransformedCoordinate(byte x, byte y)
+        {
+            if (_xFlipped)
+                x = (byte)(GridSize - 1 - x);
+            if (_yFlipped)
+                y = (byte)(GridSize - 1 - y);
+            if (_xySwapped)
+            {
+                byte s = x;
+                x = y;
+                y = s;
+            }
+            return "(" + x + "," + y + ")";
+        }
     }
 
     public class Pivot
@@ -273,6 +293,11 @@ public class KugelblitzCalculation
         public int Read()
         {
             return _grid.Get(_x, _y);
+        }
+
+        public string Coordinate()
+        {
+            return _grid.TransformedCoordinate(_x, _y);
         }
 
         public override string ToString()

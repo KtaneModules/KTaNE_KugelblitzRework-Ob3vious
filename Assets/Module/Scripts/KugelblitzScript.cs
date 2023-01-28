@@ -3,7 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Newtonsoft.Json;
+using KTMissionGetter;
 using Rnd = UnityEngine.Random;
+using System.Text.RegularExpressions;
+using System.IO;
 
 public class KugelblitzScript : MonoBehaviour
 {
@@ -15,6 +19,7 @@ public class KugelblitzScript : MonoBehaviour
     public KMBossModule BossProperties;
     public KMAudio Audio;
     public KMColorblindMode Colorblind;
+    public KMModSettings Settings;
 
     public KugelblitzVoid Void;
     public KugelblitzParticle Particle;
@@ -24,6 +29,7 @@ public class KugelblitzScript : MonoBehaviour
     public VoidLinkage Linkage;
 
     private int _solves;
+    private int _stagesAdvanced = 0;
 
     private KugelblitzLobby _lobby = null;
 
@@ -36,9 +42,11 @@ public class KugelblitzScript : MonoBehaviour
     public Material[] SolveMats;
 
 
+    private string[] _ignoreList = { "Kugelblitz" };
+
+
     private static int _moduleIdCounter = 1;
     private int _moduleId;
-
 
     void Awake()
     {
@@ -56,22 +64,40 @@ public class KugelblitzScript : MonoBehaviour
         Particle.GetComponent<MeshRenderer>().enabled = false;
 
         Highlight.enabled = false;
-        Debug.Log(Linkage);
-        //Linkage = GetComponentInChildren<VoidLinkage>();
-        //Debug.Log(Linkage);
         Linkage.GetComponentInChildren<MeshRenderer>().enabled = false;
 
         AssignStage(new EmptyStage(KugelblitzColor.None));
 
+        Module.OnActivate = () =>
+        {
+            _ignoreList = BossProperties.GetIgnoredModules("Kugelblitz", _ignoreList);
+
+            if (RemainingSolves() < 2)
+            {
+                Log("Forced into a solve state due to lack of stages.");
+                Module.HandlePass();
+                AssignStage(new EmptyStage(KugelblitzColor.None));
+                return;
+            }
+
+            _colorblind = Colorblind.ColorblindModeActive;
+            UpdateColorblind();
+
+            LobbyManager.Subscribe(this);
+            StartCoroutine(WaitForLobby());
+        };
+    }
+
+    public IEnumerator WaitForLobby()
+    {
+        yield return null;
         _lobby = LobbyManager.GetRandomLobby();
         _lobby.Subscribe(this);
-        _colorblind = Colorblind.ColorblindModeActive;
-        UpdateColorblind();
+        LobbyManager.Unsubscribe(this);
     }
 
     public void AssignStage(IKugelblitzStageViewer viewer)
     {
-        Debug.Log("Assigned " + viewer + " to " + this);
         viewer.UpdateParticles(_particles.ToArray());
         Void.SetColor(viewer.GetBaseColor());
     }
@@ -87,6 +113,7 @@ public class KugelblitzScript : MonoBehaviour
         int solves = CalculateSolveCount();
         if (solves != _solves)
         {
+            _stagesAdvanced = solves - _solves;
             _solves = solves;
             return true;
         }
@@ -95,17 +122,22 @@ public class KugelblitzScript : MonoBehaviour
 
     private int CalculateSolveCount()
     {
-        return Bomb.GetSolvedModuleNames().Count(x => x != "Kugelblitz");
+        return Bomb.GetSolvedModuleNames().Count(x => !_ignoreList.Contains(x));
     }
 
     private int CalculateSolvableCount()
     {
-        return Bomb.GetSolvableModuleNames().Count(x => x != "Kugelblitz");
+        return Bomb.GetSolvableModuleNames().Count(x => !_ignoreList.Contains(x));
     }
 
     public int RemainingSolves()
     {
         return CalculateSolvableCount() - CalculateSolveCount();
+    }
+
+    public int StagesAdvanced()
+    {
+        return _stagesAdvanced;
     }
 
     public void HighlightVoid()
@@ -120,9 +152,6 @@ public class KugelblitzScript : MonoBehaviour
 
     public VoidLinkage GetLinkCopy()
     {
-        Debug.Log(Linkage);
-        Debug.Log(this);
-        Debug.Log(_lobby);
         return Instantiate(Linkage, Void.transform.parent);
     }
 
@@ -180,18 +209,17 @@ public class KugelblitzScript : MonoBehaviour
     }
 
 
-    public Queue<KugelblitzLobby.LobbyContentBuilder> GetQuirkSets()
-    {
-        return new Queue<KugelblitzLobby.LobbyContentBuilder>();
-    }
-
-
-
 #pragma warning disable 414
-    private string TwitchHelpMessage = "'!{0} colorblind' to toggle colorblind mode, !{0} highlight' to highlight the module and find its connections, 'h'/'r'/'i' to hold, release or toggle interaction with the sphere (respectively). 'p'/'t' to wait for a pulse/tick from the module. Please do not execute stupid interactions like '!{0} rphh' or '!{0} iiiii'. Commands can be chained for the sake of solvability.";
+    private string TwitchHelpMessage = "'!{0} colorblind' to toggle colorblind mode, !{0} highlight' to highlight the module and find its connections, !{0} disconnect to disconnect the module from its current group, !{0} id to retrieve the current group id, !{0} connect 1 to connect to the group with id 1, 'h'/'r'/'i' to hold, release or toggle interaction with the sphere (respectively). 'p'/'t' to wait for a pulse/tick from the module. Please do not execute stupid interactions like '!{0} rphh' or '!{0} iiiii'. Interactions can be chained (e.g. httrthr)";
 #pragma warning restore 414
     private IEnumerator ProcessTwitchCommand(string command)
     {
+        if (_lobby == null)
+        {
+            yield return "sendtochaterror {0}, please wait until the module has loaded.";
+            yield break;
+        }
+
         command = command.ToLowerInvariant();
         if (command == "colorblind")
         {
@@ -341,7 +369,7 @@ public class KugelblitzScript : MonoBehaviour
 
         _lobby.ClaimAutosolve();
 
-        string command = (_lobby.IsSolvable() ? "" : "[.]") + KugelblitzCalculation.Calculate(_lobby);
+        string command = (_lobby.IsSolvable() ? "" : "[.]") + _lobby.ExpectedInput;
 
         KMSelectable sphere = Void.GetComponent<KMSelectable>();
         while (_particles[0].GetLerp() >= 0.125f) { yield return new WaitForSeconds(0.25f); }
@@ -373,8 +401,130 @@ public class KugelblitzScript : MonoBehaviour
     }
 
 
+
+    public class ModSettings
+    {
+        public string Preset = "???????";
+        public float Pacing = 2.5f;
+    }
+
+    public string GetPreset()
+    {
+        try
+        {
+            ModSettings settings = JsonConvert.DeserializeObject<ModSettings>(Settings.Settings);
+            if (settings.Preset.Length != 7 || settings.Preset.Any(x => !"+-?".Contains(x)))
+            {
+                settings.Preset = "???????";
+                File.WriteAllText(Settings.SettingsPath, JsonConvert.SerializeObject(settings));
+            }
+            return settings.Preset;
+        }
+        catch
+        {
+            ModSettings settings = new ModSettings();
+            File.WriteAllText(Settings.SettingsPath, JsonConvert.SerializeObject(settings));
+            return "???????";
+        }
+    }
+
+    public float GetPacing()
+    {
+        try
+        {
+            ModSettings settings = JsonConvert.DeserializeObject<ModSettings>(Settings.Settings);
+            if (settings.Pacing > 10f || settings.Pacing < 0.25f)
+            {
+                settings.Pacing = Mathf.Clamp(settings.Pacing, 0.25f, 10f);
+                File.WriteAllText(Settings.SettingsPath, JsonConvert.SerializeObject(settings));
+            }
+            return Mathf.Clamp(settings.Pacing, 0.25f, 10f);
+        }
+        catch
+        {
+            ModSettings settings = new ModSettings();
+            File.WriteAllText(Settings.SettingsPath, JsonConvert.SerializeObject(settings));
+            return 2.5f;
+        }
+    }
+
+
+
+    public Queue<KugelblitzLobby.LobbyContentBuilder> GetQuirkSets()
+    {
+        Queue<KugelblitzLobby.LobbyContentBuilder> presets = new Queue<KugelblitzLobby.LobbyContentBuilder>();
+
+        string missionDesc = Mission.Description;
+
+        if (missionDesc == null)
+            return new Queue<KugelblitzLobby.LobbyContentBuilder>();
+
+        string pacingRegex = @"\d{1,2}(\.\d{1,3})?";
+        string presetRegex = @"[1-8]{0,2}[+\-?]{7}";
+        string poolRegex = "(" + pacingRegex + ";)?" + presetRegex;
+
+        Regex regex = new Regex(@"\[Kugelblitz\]:(" + poolRegex + @",)*" + poolRegex);
+        var match = regex.Match(missionDesc);
+        if (!match.Success)
+            return new Queue<KugelblitzLobby.LobbyContentBuilder>();
+
+        string[] options = match.Value.Replace("[Kugelblitz]:", "").Split(',');
+
+        foreach (string preset in options)
+        {
+            try
+            {
+                string[] segments = preset.Split('/');
+
+                string presetCode = segments.Last();
+                float time = 2.5f;
+                if (segments.Length == 2)
+                    time = float.Parse(segments[0]);
+
+                if (time < 0.25f || time > 10)
+                    throw new ArgumentOutOfRangeException();
+
+                switch (presetCode.Length)
+                {
+                    case 7:
+                        if (segments.Length == 2)
+                            presets.Enqueue(new KugelblitzLobby.LobbyContentBuilder(1, 8, presetCode, time));
+                        else
+                            presets.Enqueue(new KugelblitzLobby.LobbyContentBuilder(1, 8, presetCode));
+                        break;
+                    case 8:
+                        if (segments.Length == 2)
+                            presets.Enqueue(new KugelblitzLobby.LobbyContentBuilder(presetCode[0] - '0', presetCode[0] - '0', presetCode.Substring(1), time));
+                        else
+                            presets.Enqueue(new KugelblitzLobby.LobbyContentBuilder(presetCode[0] - '0', presetCode[0] - '0', presetCode.Substring(1)));
+                        break;
+                    case 9:
+                        if (segments.Length == 2)
+                            presets.Enqueue(new KugelblitzLobby.LobbyContentBuilder(presetCode[0] - '0', presetCode[1] - '0', presetCode.Substring(2), time));
+                        else
+                            presets.Enqueue(new KugelblitzLobby.LobbyContentBuilder(presetCode[0] - '0', presetCode[1] - '0', presetCode.Substring(2)));
+                        break;
+                    default:
+                        break;
+                }
+            }
+            catch
+            {
+                return new Queue<KugelblitzLobby.LobbyContentBuilder>();
+            }
+        }
+        return presets;
+    }
+
+
+
     public override string ToString()
     {
         return "[Kugelblitz #" + _moduleId + "]";
+    }
+
+    public void Log(string line)
+    {
+        Debug.LogFormat("[Kugelblitz #{0}] {1}", _moduleId, line);
     }
 }

@@ -20,7 +20,7 @@ public class KugelblitzLobby
     private KugelblitzColor _color;
 
     private string _input = "";
-    private string _expectedInput = "";
+    public string ExpectedInput { get; private set; }
     private bool _solvable = false;
     private KugelblitzScript _lastInteract = null;
 
@@ -32,11 +32,15 @@ public class KugelblitzLobby
 
     private int _stagecount = 0;
 
+    private KugelblitzLogger _logger = null;
+
     public KugelblitzLobby(LobbyContentBuilder content, string id)
     {
         _content = content;
         _id = id;
         _color = KugelblitzColor.GetRandomHue(id);
+
+        ExpectedInput = "";
     }
 
     public bool Subscribe(KugelblitzScript kugelblitz)
@@ -45,7 +49,7 @@ public class KugelblitzLobby
             return false;
 
         _members.Add(kugelblitz);
-        _members.Last().AssignStage(new EmptyStage(_color));
+        _members.Last().AssignStage(new EmptyStage(GetLobbyBaseColor()));
         _members.Last().Highlight.material.color = GetLobbyHighlightColor().GetColor();
 
         KMSelectable moduleSelectable = kugelblitz.GetComponent<KMSelectable>();
@@ -58,7 +62,7 @@ public class KugelblitzLobby
     //TP no mission only
     public bool Unsubscribe(KugelblitzScript kugelblitz)
     {
-        if (!_isOpen && !_content.IsMissionPreset())
+        if (!_isOpen || _content.IsMissionPreset())
             return false;
 
         _members.Remove(kugelblitz);
@@ -95,9 +99,17 @@ public class KugelblitzLobby
         if (!_isOpen)
             return;
 
-        _startingAngle = (byte)Rnd.Range(0, 8);
-
         _isOpen = false;
+
+        _logger = new KugelblitzLogger(_members.First());
+
+        foreach (KugelblitzScript member in _members.Skip(1))
+            member.Log("Logging can be found at " + _members.First());
+
+        _logger.WriteFormat("Using {0}preset: {1}.", _content.IsMissionPreset() ? "mission " : "", _content);
+        _logger.WriteFormat("Participating modules: {0}.", _members.Join(", "));
+
+        _startingAngle = (byte)Rnd.Range(0, 8);
 
         _quirks = _content.Build(_members.Count).Content;
 
@@ -106,12 +118,12 @@ public class KugelblitzLobby
         for (int i = 0; i < _members.Count; i++)
         {
             _quirks[i].Generate(_members[i].RemainingSolves());
-            Debug.Log("Generated " + (_members[i].RemainingSolves()) + " stages");
+
+            _logger.WriteFormat("Generated {0} stages: {1}.", _members[i].RemainingSolves(), _quirks[i]);
+
             _stagecount += _members[i].RemainingSolves();
         }
-        _expectedInput = KugelblitzCalculation.Calculate(this);
-
-        Debug.Log(_expectedInput);
+        ExpectedInput = KugelblitzCalculation.Calculate(this);
 
         _members.First().PlaySound("Eerie");
     }
@@ -119,6 +131,11 @@ public class KugelblitzLobby
     public T GetQuirk<T>() where T : IKugelblitzStageManager
     {
         return (T)_quirks.First(x => x is T);
+    }
+
+    public byte GetInitialDirection()
+    {
+        return _startingAngle;
     }
 
     public void UpdateLobby()
@@ -184,9 +201,6 @@ public class KugelblitzLobby
             _linkages[linkIndex].Transform2 = _members[index2].Void.transform.parent;
             linkIndex++;
 
-            //Debug.Log("Added " + index1 + "-" + index2 + ", " + distance);
-            //Debug.Log(groups.Select(x => "[" + x.Join(",") + "]").Join("; "));
-
             group1.AddRange(group2);
             groups.Remove(group2);
         }
@@ -206,8 +220,6 @@ public class KugelblitzLobby
         if (stageShiftingMods.Count() == 0)
             return;
 
-        Debug.Log("A solve has been detected");
-
         if (_isOpen)
         {
             Freeze();
@@ -215,16 +227,13 @@ public class KugelblitzLobby
             {
                 _quirks[i].Return();
                 _members[i].AssignStage((IKugelblitzStageViewer)_quirks[i]);
-                Debug.Log("Assigned " + _quirks[i] + " to " + _members[i]);
             }
-            Debug.Log(_members.Join(","));
-            Debug.Log(_quirks.Join(","));
             return;
         }
 
-        Debug.Log("Starting with");
-        Debug.Log(_members.Join(","));
-        Debug.Log(_quirks.Join(","));
+        _logger.WriteFormat("A module has been solved. Advancing the following modules: {0}.", stageShiftingMods.Join(", "));
+
+        _members.First().PlaySound("Discomfort");
 
         IEnumerable<int> unsolvedCounts = stageShiftingMods.Select(x => x.RemainingSolves()).Distinct();
 
@@ -236,10 +245,7 @@ public class KugelblitzLobby
             {
                 reorderedMembers.Add(_members[i]);
                 reorderedQuirks.Add(_quirks[i]);
-                Debug.Log("Added " + _quirks[i] + " as unchanged");
             }
-
-        Debug.Log(stageShiftingMods.Count());
 
         foreach (int count in unsolvedCounts)
         {
@@ -253,10 +259,7 @@ public class KugelblitzLobby
                     quirksToShuffle.Add(_quirks[i]);
                 }
 
-            Debug.Log("Shuffled " + quirksToShuffle.Join(", "));
             quirksToShuffle = quirksToShuffle.Shuffle();
-            Debug.Log("is now " + quirksToShuffle.Join(", "));
-
 
             if (count == 0)
             {
@@ -264,14 +267,14 @@ public class KugelblitzLobby
                 {
                     for (int i = 0; i < membersToProgress.Count; i++)
                     {
-                        membersToProgress[i].AssignStage(new EmptyStage(_color));
+                        membersToProgress[i].AssignStage(new EmptyStage(GetLobbyBaseColor()));
                         reorderedMembers.Add(membersToProgress[i]);
                         reorderedQuirks.Add(quirksToShuffle[i]);
                     }
                     continue;
                 }
 
-                EnterSolvableState(1.5f);
+                EnterSolvableState(_content.Pacing());
 
                 return;
             }
@@ -282,24 +285,22 @@ public class KugelblitzLobby
                 reorderedMembers.Add(membersToProgress[i]);
                 reorderedQuirks.Add(quirksToShuffle[i]);
 
-                quirksToShuffle[i].Advance();
+                for (int j = 0; j < membersToProgress[i].StagesAdvanced(); j++)
+                    quirksToShuffle[i].Advance();
                 membersToProgress[i].AssignStage((IKugelblitzStageViewer)quirksToShuffle[i]);
-                Debug.Log("Assigned " + quirksToShuffle[i] + " to " + membersToProgress[i]);
             }
         }
 
         _members = reorderedMembers;
         _quirks = reorderedQuirks;
-
-        Debug.Log(_members.Join(","));
-        Debug.Log(_quirks.Join(","));
     }
 
     public void EnterSolvableState(float pacing)
     {
-        _members.ForEach(x => {
+        _members.ForEach(x =>
+        {
             x.EnterSolvableState(pacing);
-            x.AssignStage(new ValueStage(_color, _startingAngle));
+            x.AssignStage(new ValueStage(GetLobbyBaseColor(), _startingAngle));
 
             x.Void.GetComponent<KMSelectable>().OnInteract = () => { x.Void.Pulse(); Insert('['); LastInputBy(x); return false; };
             x.Void.GetComponent<KMSelectable>().OnInteractEnded = () => { x.Void.Pulse(); Insert(']'); LastInputBy(x); };
@@ -327,7 +328,12 @@ public class KugelblitzLobby
 
         _lastInteract.GetComponent<KMBombModule>().HandleStrike();
         _quirks = _quirks.Shuffle();
-        _quirks.ForEach(x => { x.CollapseStages(); x.Return(); });
+        _quirks.ForEach(x =>
+        {
+            x.CollapseStages(); x.Return();
+            _logger.WriteFormat("Collapsed stages: {0}.", x);
+        });
+
         for (int i = 0; i < _members.Count; i++)
             _members[i].AssignStage((IKugelblitzStageViewer)_quirks[i]);
 
@@ -339,15 +345,9 @@ public class KugelblitzLobby
         _solvable = false;
         _solved = true;
 
-        Debug.Log(_stagecount);
+        _logger.WriteFormat("Successfully solved {0} stages of Kugelblitz. Well done!", _stagecount);
         int mat = -1;
-        if (_stagecount >= 10)
-            mat++;
-        if (_stagecount >= 25)
-            mat++;
         if (_stagecount >= 100)
-            mat++;
-        if (_stagecount >= 250)
             mat++;
 
         if (mat != -1)
@@ -360,6 +360,7 @@ public class KugelblitzLobby
         _members = _members.Shuffle();
         foreach (KugelblitzScript member in _members)
         {
+            _logger.WriteFormat("Solved {0}.", member);
             member.Solve();
             member.AssignStage(new EmptyStage(KugelblitzColor.None));
             _members.First().PlaySound("Decay");
@@ -383,7 +384,6 @@ public class KugelblitzLobby
             if (_input.StartsWith("]"))
             {
                 _input = _input.SkipWhile(x => ".]".Contains(x)).Join("");
-                Debug.Log("Reverted to " + _input);
                 return;
             }
 
@@ -392,18 +392,17 @@ public class KugelblitzLobby
 
             StopSound();
 
-            if (_input == _expectedInput + "..")
+            if (_input.Replace("]..", "]") == ExpectedInput)
             {
-                Debug.Log("Module Passed");
                 _members.First().StartCoroutine(Solve());
             }
             else
             {
-                Debug.Log(_input);
+                _logger.WriteFormat("I received {0}, but I expected {1}.", _input.Replace("]..", "]"), ExpectedInput);
                 Strike();
             }
 
-            
+
 
         }
         else
@@ -411,8 +410,9 @@ public class KugelblitzLobby
             if (_input == "[.")
             {
                 _solvable = true;
-                _members.ForEach(x => {
-                    x.AssignStage(new ValueStage(_color, _startingAngle));
+                _members.ForEach(x =>
+                {
+                    x.AssignStage(new ValueStage(GetLobbyBaseColor(), _startingAngle));
                 });
             }
             else if (_input == "[].")
@@ -478,11 +478,14 @@ public class KugelblitzLobby
         return _solvable;
     }
 
+    public KugelblitzLogger GetLogger()
+    {
+        return _logger;
+    }
+
     public class LobbyContent
     {
         public List<IKugelblitzStageManager> Content { get; private set; }
-
-        public LobbyContent(int count) : this("???????", count) { }
 
         // "---+??+" would mean: use green and violet and if needed pick from blue and indigo
         public LobbyContent(string properties, int count)
@@ -491,7 +494,8 @@ public class KugelblitzLobby
 
             IKugelblitzStageManager[] availableQuirks = { new OffsetStageManager(), new InvertStageManager(), new InsertStageManager(), new LengthStageManager(), new TurnStageManager(), new FlipStageManager(), new WrapStageManager() };
 
-            Content.AddRange(Enumerable.Range(0, properties.Length).Where(x => properties[x] == '+').Select(x => availableQuirks[x]));
+            Content.AddRange(Enumerable.Range(0, properties.Length).Where(x => properties[x] == '+').Select(x => availableQuirks[x])
+                .ToList().Shuffle().Take(count));
 
             Content.AddRange(Enumerable.Range(0, properties.Length)
                 .Where(x => properties[x] == '?')
@@ -507,17 +511,21 @@ public class KugelblitzLobby
 
         private string _structure;
 
+        private float _pacing;
+
         private bool _isMissionPreset;
 
-        public LobbyContentBuilder()
+        public LobbyContentBuilder() : this(1, 8, KugelblitzScript.LastInstance.GetPreset())
         {
-            _minSize = 1;
-            _maxSize = 8;
-            _structure = "???????";
             _isMissionPreset = false;
         }
 
-        public LobbyContentBuilder(int minSize, int maxSize, string structure)
+        public LobbyContentBuilder(int minSize, int maxSize, string structure) : this(minSize, maxSize, structure, KugelblitzScript.LastInstance.GetPacing())
+        {
+            
+        }
+
+        public LobbyContentBuilder(int minSize, int maxSize, string structure, float pacing)
         {
             _minSize = Math.Max(minSize, structure.Count(x => "+".Contains(x)) + 1);
             _maxSize = Math.Min(maxSize, structure.Count(x => "+?".Contains(x)) + 1);
@@ -525,7 +533,15 @@ public class KugelblitzLobby
                 throw new ArgumentOutOfRangeException("The lower bound should be less than or equal to the upper bound.");
 
             _structure = structure;
+
+            _pacing = pacing;
+
             _isMissionPreset = true;
+        }
+
+        public float Pacing()
+        {
+            return _pacing;
         }
 
         public bool IsRequesting(int current)
@@ -551,6 +567,11 @@ public class KugelblitzLobby
         public LobbyContent Build(int count)
         {
             return new LobbyContent(_structure, count);
+        }
+
+        public override string ToString()
+        {
+            return _minSize + "-" + _maxSize + ":" + _structure;
         }
     }
 }

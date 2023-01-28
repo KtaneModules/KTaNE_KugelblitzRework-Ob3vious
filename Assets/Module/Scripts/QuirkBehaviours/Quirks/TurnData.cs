@@ -22,6 +22,11 @@ public class TurnStageManager : KugelblitzStageManager<KugelblitzTurnData>
             Current().GetFromIndex(index) != 0 ? KugelblitzColor.GetColorFromIndex(index) : KugelblitzColor.None,
             ParticleMovement.FromDiagonal(Current().GetFromIndex(index) == 2));
     }
+
+    protected override string StageType()
+    {
+        return "Blue quirk";
+    }
 }
 
 public class KugelblitzTurnData : KugelblitzData<KugelblitzTurnData>

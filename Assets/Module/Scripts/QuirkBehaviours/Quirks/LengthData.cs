@@ -22,6 +22,11 @@ public class LengthStageManager : KugelblitzStageManager<KugelblitzLengthData>
             Current().GetFromIndex(index) != 0 ? KugelblitzColor.GetColorFromIndex(index) : KugelblitzColor.None,
             ParticleMovement.FromPeaks(Current().GetFromIndex(index) - 1));
     }
+
+    protected override string StageType()
+    {
+        return "Green quirk";
+    }
 }
 
 public class KugelblitzLengthData : KugelblitzData<KugelblitzLengthData>

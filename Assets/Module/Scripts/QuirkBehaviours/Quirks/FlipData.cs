@@ -22,6 +22,11 @@ public class FlipStageManager : KugelblitzStageManager<KugelblitzFlipData>
             Current().GetFromIndex(index) ? KugelblitzColor.GetColorFromIndex(index) : KugelblitzColor.None,
             ParticleMovement.FromPassingAxis(2));
     }
+
+    protected override string StageType()
+    {
+        return "Indigo quirk";
+    }
 }
 
 public class KugelblitzFlipData : KugelblitzData<KugelblitzFlipData>

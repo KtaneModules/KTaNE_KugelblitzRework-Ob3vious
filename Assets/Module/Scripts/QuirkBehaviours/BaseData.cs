@@ -25,6 +25,11 @@ public class BaseStageManager : KugelblitzStageManager<KugelblitzBaseData>
             Current().GetFromIndex(index) ? KugelblitzColor.GetColorFromIndex(index) : KugelblitzColor.None, 
             ParticleMovement.FromRandom());
     }
+
+    protected override string StageType()
+    {
+        return "Regular";
+    }
 }
 
 public class KugelblitzBaseData : KugelblitzData<KugelblitzBaseData>

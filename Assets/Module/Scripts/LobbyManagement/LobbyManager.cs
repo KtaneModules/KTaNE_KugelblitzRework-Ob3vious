@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Contexts;
+using UnityEngine;
 
 
 public static class LobbyManager
@@ -8,6 +10,24 @@ public static class LobbyManager
     private static List<KugelblitzLobby> _currentLobbies = new List<KugelblitzLobby>();
     private static Queue<KugelblitzLobby.LobbyContentBuilder> _presets = new Queue<KugelblitzLobby.LobbyContentBuilder>();
     private static bool _hasCheckedForMission = false;
+
+    private static List<KugelblitzScript> _interestedModules = new List<KugelblitzScript>();
+
+
+    public static void Subscribe(KugelblitzScript kugelblitz)
+    {
+        _interestedModules.Add(kugelblitz);
+        if (GetAvailableLobbies().Sum(x => x.OpenSlots()) < _interestedModules.Count)
+            GetNewLobby();
+    }
+
+    //TP no mission only
+    public static void Unsubscribe(KugelblitzScript kugelblitz)
+    {
+        _interestedModules.Remove(kugelblitz);
+    }
+
+
 
     public static void Reset()
     {

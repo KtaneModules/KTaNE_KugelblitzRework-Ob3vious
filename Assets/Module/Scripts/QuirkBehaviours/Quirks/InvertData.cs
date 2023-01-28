@@ -22,6 +22,11 @@ public class InvertStageManager : KugelblitzStageManager<KugelblitzInvertData>
             Current().GetFromIndex(index) ? KugelblitzColor.GetColorFromIndex(index) : KugelblitzColor.None,
             ParticleMovement.FromPassingAxis(0));
     }
+
+    protected override string StageType()
+    {
+        return "Orange quirk";
+    }
 }
 
 public class KugelblitzInvertData : KugelblitzData<KugelblitzInvertData>

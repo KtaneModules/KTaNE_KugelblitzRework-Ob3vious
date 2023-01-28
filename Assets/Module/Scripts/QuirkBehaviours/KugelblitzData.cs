@@ -99,6 +99,13 @@ public abstract class KugelblitzStageManager<T> : KugelblitzStageViewer, IKugelb
     {
         return Target;
     }
+
+    protected abstract string StageType();
+
+    public override string ToString()
+    {
+        return StageType() + ": [" + _stages.Join(", ") + "]";
+    }
 }
 
 public abstract class KugelblitzData<T> : IKugelblitzData<T> where T : KugelblitzData<T>

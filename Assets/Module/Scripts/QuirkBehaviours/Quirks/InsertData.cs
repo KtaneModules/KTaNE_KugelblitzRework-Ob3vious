@@ -22,6 +22,11 @@ public class InsertStageManager : KugelblitzStageManager<KugelblitzInsertData>
             Current().GetFromIndex(index) ? KugelblitzColor.GetColorFromIndex(index) : KugelblitzColor.None,
             ParticleMovement.FromPassingAxis(1));
     }
+
+    protected override string StageType()
+    {
+        return "Yellow quirk";
+    }
 }
 
 public class KugelblitzInsertData : KugelblitzData<KugelblitzInsertData>

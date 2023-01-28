@@ -796,15 +796,13 @@ MonoBehaviour:
   BossProperties: {fileID: 114185342294476886}
   Audio: {fileID: 114731245387369772}
   Colorblind: {fileID: 114965459431782202}
+  Settings: {fileID: 114832671761231622}
   Void: {fileID: 114662920794018152}
   Particle: {fileID: 114106263829237120}
   Highlight: {fileID: 23747354486873898}
   Linkage: {fileID: 114808829736998066}
   SolveMats:
-  - {fileID: 2100000, guid: bd10f0804439c474c89f06697a7403be, type: 2}
-  - {fileID: 2100000, guid: 13d3e1b9daf7a2141969e5a06ec6d3d4, type: 2}
   - {fileID: 2100000, guid: 7400e02b6fb1b7140bbc192d1a34d962, type: 2}
-  - {fileID: 2100000, guid: 268c5fed2d5dce249972609da9d6e1b0, type: 2}
 --- !u!114 &114552431356978598
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -884,7 +882,7 @@ MonoBehaviour:
   m_Script: {fileID: -706292897, guid: 45b809be76fd7a3468b6f517bced6f28, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  HighlightScale: {x: 1, y: 1, z: 1}
+  HighlightScale: {x: 1.1, y: 1.1, z: 1.1}
   OutlineAmount: 0
 --- !u!114 &114808829736998066
 MonoBehaviour:
@@ -910,7 +908,7 @@ MonoBehaviour:
   m_Script: {fileID: -289456416, guid: 45b809be76fd7a3468b6f517bced6f28, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Settings: 
+  Settings: '{"Preset":"???????","Pacing":2.5}'
   SettingsPath: 
 --- !u!114 &114849364113809974
 MonoBehaviour:
