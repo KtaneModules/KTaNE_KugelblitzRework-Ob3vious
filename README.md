@@ -6,7 +6,7 @@ It is possible to set the timer and quirks for multiple groups as follows:
 `[Kugelblitz]:<group>,<group>,<group>`  
   
 ### Group Structure
-`<group>` in the structure above can be of the form `<pacing>;<preset>` or just `<preset>`. If the latter is used, the pacing will default to the value in the modsettings. This is 2.5 by default.  
+`<group>` in the structure above can be of the form `<pacing>;<preset>` or just `<preset>`. If the latter is used, the pacing will default to the value in modsettings, which is initially 2.5.  
 
 #### Pacing
 Pacing is the amount of time between pulses on the module during submission phase.
