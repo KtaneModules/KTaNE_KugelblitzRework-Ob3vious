@@ -1,4 +1,6 @@
 # Kugelblitz Version 2
+For the first version of Kugelblitz, refer to https://github.com/Ob3vious/KTaNE_Kugelblitz
+
 ## Mission Settings
   
 ### General Structure
