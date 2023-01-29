@@ -16,6 +16,6 @@ MonoBehaviour:
   author: Obvious
   description: This module has become an insane project and a lot of effort went into
     it. Enjoy!
-  version: 0.5
+  version: 2.0
   outputFolder: build
-  previewImage: {fileID: 0}
+  previewImage: {fileID: 2800000, guid: 198ac9b4bc583ab4aba8ab52dd0b13f9, type: 3}
