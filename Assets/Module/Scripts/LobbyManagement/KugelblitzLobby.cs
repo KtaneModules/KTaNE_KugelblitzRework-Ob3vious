@@ -495,7 +495,7 @@ public class KugelblitzLobby
             IKugelblitzStageManager[] availableQuirks = { new OffsetStageManager(), new InvertStageManager(), new InsertStageManager(), new LengthStageManager(), new TurnStageManager(), new FlipStageManager(), new WrapStageManager() };
 
             Content.AddRange(Enumerable.Range(0, properties.Length).Where(x => properties[x] == '+').Select(x => availableQuirks[x])
-                .ToList().Shuffle().Take(count));
+                .ToList().Shuffle().Take(count - Content.Count));
 
             Content.AddRange(Enumerable.Range(0, properties.Length)
                 .Where(x => properties[x] == '?')
