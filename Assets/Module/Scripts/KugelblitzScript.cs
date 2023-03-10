@@ -163,7 +163,7 @@ public class KugelblitzScript : MonoBehaviour
         Void.SetSpeed(1 / pacing);
     }
 
-    public void ExitSolvablestate()
+    public void ExitSolvableState()
     {
         _solvable = false;
         _particles.ForEach(x => x.SetSpeed(1));
