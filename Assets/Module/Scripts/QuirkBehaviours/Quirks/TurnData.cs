@@ -74,7 +74,7 @@ public class KugelblitzTurnData : KugelblitzData<KugelblitzTurnData>
     public byte GetFromIndex(int index)
     {
         if (IsFinalResult)
-            return _data.Take(4).Concat(_data.Skip(5)).Select(x => (byte)((x + _data[5]) % 3)).ToArray()[index];
+            return _data.Take(4).Concat(_data.Skip(5)).Select(x => (byte)((x + _data[4]) % 3)).ToArray()[index];
 
         return _data[index];
     }
