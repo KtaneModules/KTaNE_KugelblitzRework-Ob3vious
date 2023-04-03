@@ -307,6 +307,9 @@ public class KugelblitzScript : MonoBehaviour
                 yield break;
             }
 
+            yield return "strike";
+            yield return "solve";
+
             KMSelectable sphere = Void.GetComponent<KMSelectable>();
             while (_particles[0].GetLerp() >= 0.125f) { yield return new WaitForSeconds(0.25f); }
             for (int i = 0; i < command.Length; i++)
@@ -348,8 +351,6 @@ public class KugelblitzScript : MonoBehaviour
                 }
                 yield return null;
             }
-            yield return "strike";
-            yield return "solve";
         }
         yield return null;
     }
