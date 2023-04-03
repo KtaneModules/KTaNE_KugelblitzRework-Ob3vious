@@ -49,6 +49,9 @@ public class KugelblitzLobby
             return false;
 
         _members.Add(kugelblitz);
+
+        UpdateVoidLinkages();
+
         _members.Last().AssignStage(new EmptyStage(GetLobbyBaseColor()));
         _members.Last().Highlight.material.color = GetLobbyHighlightColor().GetColor();
 
@@ -66,6 +69,8 @@ public class KugelblitzLobby
             return false;
 
         _members.Remove(kugelblitz);
+
+        UpdateVoidLinkages();
 
         KMSelectable moduleSelectable = kugelblitz.GetComponent<KMSelectable>();
         moduleSelectable.OnHighlight = () => { };
@@ -208,7 +213,10 @@ public class KugelblitzLobby
         IEnumerable<VoidLinkage> discardedLinks = _linkages.Skip(linkIndex);
         _linkages = _linkages.Take(linkIndex).ToList();
         foreach (VoidLinkage linkage in discardedLinks)
+        {
+            GameObject.Destroy(linkage.GetComponentInChildren<MeshRenderer>());
             GameObject.Destroy(linkage);
+        }
     }
 
     public void UpdateSolves()
@@ -471,6 +479,7 @@ public class KugelblitzLobby
     public void ClaimAutosolve()
     {
         _isAutosolveClaimed = true;
+        _input = "";
     }
 
     public bool IsSolvable()
