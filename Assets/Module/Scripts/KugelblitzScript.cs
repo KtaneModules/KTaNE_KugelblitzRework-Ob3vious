@@ -399,6 +399,9 @@ public class KugelblitzScript : MonoBehaviour
             }
             yield return null;
         }
+
+        while (!_solved)
+            yield return true;
     }
 
 
