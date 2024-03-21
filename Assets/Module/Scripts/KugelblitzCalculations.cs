@@ -195,31 +195,36 @@ public class KugelblitzCalculation
 
         public byte Get(byte x, byte y)
         {
-            if (_xFlipped)
-                x = (byte)(GridSize - 1 - x);
-            if (_yFlipped)
-                y = (byte)(GridSize - 1 - y);
+            //pivot needs to do diagonal flip first because it's last in flipping the grid and this stuff needs to be inverted
             if (_xySwapped)
             {
                 byte s = x;
                 x = y;
                 y = s;
             }
+
+            if (_xFlipped)
+                x = (byte)(GridSize - 1 - x);
+            if (_yFlipped)
+                y = (byte)(GridSize - 1 - y);
+            
             return _grid[y, x];
         }
 
         public string TransformedCoordinate(byte x, byte y)
         {
-            if (_xFlipped)
-                x = (byte)(GridSize - 1 - x);
-            if (_yFlipped)
-                y = (byte)(GridSize - 1 - y);
             if (_xySwapped)
             {
                 byte s = x;
                 x = y;
                 y = s;
             }
+
+            if (_xFlipped)
+                x = (byte)(GridSize - 1 - x);
+            if (_yFlipped)
+                y = (byte)(GridSize - 1 - y);
+            
             return "(" + x + "," + y + ")";
         }
     }
